@@ -15,7 +15,6 @@ public class HomeController {
     @GetMapping("/")
     public TheatronUser root() {
         TheatronUser user = userRepo.getUserFromUsername("user");
-        System.out.println(user);
         return user;
     }
 }

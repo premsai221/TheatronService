@@ -32,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Cookie authCookie = WebUtils.getCookie(request, "Authorization");
-        if (authCookie != null) {
+        if (!request.getRequestURI().matches("/auth/.*") && authCookie != null) {
             String token = authCookie.getValue();
             String username = jwtService.extractUsername(token);
             if (!jwtService.isTokenExpired(token) && !username.isEmpty()) {

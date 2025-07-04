@@ -33,7 +33,7 @@ public class UserRepo {
         userTable = enhancedClient.table(TABLE_NAME, TableSchema.fromBean(TheatronUser.class));
         userEmailIndex = userTable.index("UserEmailIndex");
         try {
-            System.out.println(userTable.describeTable().toString());
+            userTable.describeTable();
         } catch (ResourceNotFoundException exception) {
             createTable();
         }

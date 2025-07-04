@@ -19,10 +19,6 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         TheatronUser user = userRepo.getUserFromUsername(username);
-        if (user != null) {
-            return user;
-        } else {
-            throw new UsernameNotFoundException("User not found");
-        }
+        return user;
     }
 }
