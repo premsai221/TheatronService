@@ -17,9 +17,12 @@ public class MediaService {
 
     private final S3BucketService s3BucketService;
 
-    public MediaService(S3BucketService s3BucketService, MediaRepo mediaRepo) {
+    private final JwtService jwtService;
+
+    public MediaService(S3BucketService s3BucketService, MediaRepo mediaRepo, JwtService jwtService) {
         this.s3BucketService = s3BucketService;
         this.mediaRepo = mediaRepo;
+        this.jwtService = jwtService;
     }
 
     private String generateMediaID() {
@@ -60,6 +63,13 @@ public class MediaService {
         TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
         if (media == null)
             return null;
+        String currentRoom;
+        if (media.getOwner().equals(username)) {
+            currentRoom = media.getCurrentRoom();
+        } else {
+            TheatronMedia ownersMedia = mediaRepo.getUserMedia(media.getOwner(), mediaId);
+            currentRoom = ownersMedia.getCurrentRoom();
+        }
         return MediaDetails.builder()
                 .id(media.getMediaId())
                 .owner(media.getOwner())
@@ -69,6 +79,7 @@ public class MediaService {
                 .url(media.getMediaUrl())
                 .uploadedOn(media.getUploadDate())
                 .duration(media.getMediaDuration())
+                .currentRoom(currentRoom)
                 .externalUserAccessList(media.getUsername().equals(media.getOwner()) ? media.getExternalUserAccessList() : null)
                 .build();
     }
@@ -98,7 +109,6 @@ public class MediaService {
 
     public void updateMediaProcessStatus(String mediaId, String username, String status) {
         TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
-        System.out.println(mediaId);
         media.setMediaStatus(status);
         String s3MediaKey = buildS3MediaKeyFromMediaId(mediaId);
         media.setMediaUrl(s3BucketService.getS3UrlFromKey(s3MediaKey));
@@ -129,5 +139,35 @@ public class MediaService {
         }
         mediaRepo.removeMedia(userToRemove, mediaId);
         return externalUserAccessList;
+    }
+
+    public String createNewRoom(String username, String mediaId, String roomName) {
+        TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
+        if (!media.getOwner().equals(username) || (media.getCurrentRoom() != null && !media.getCurrentRoom().isEmpty())) {
+            return null;
+        }
+        media.setCurrentRoom(roomName);
+        mediaRepo.updateItem(media);
+        return roomName;
+    }
+
+    public String deleteRoom(String username, String mediaId, String roomName) {
+        TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
+        if (!media.getOwner().equals(username) || !media.getCurrentRoom().isEmpty() || !media.getCurrentRoom().equals(roomName)) {
+            return null;
+        }
+        media.setCurrentRoom(null);
+        mediaRepo.updateItem(media);
+        return roomName;
+    }
+
+    public String checkIfRoomActive(String username, String mediaId, String roomName) {
+        TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
+        if (media.getOwner().equals(username)) {
+            return jwtService.generateSharedToken(mediaId + "|" + roomName, username, true);
+        } else {
+            TheatronMedia ownerMedia = mediaRepo.getUserMedia(media.getOwner(), mediaId);
+            return jwtService.generateSharedToken(mediaId + "|" + roomName, username, false);
+        }
     }
 }

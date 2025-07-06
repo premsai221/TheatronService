@@ -1,6 +1,7 @@
 package com.example.TheatronService.controller;
 
 import com.example.TheatronService.model.mediaDTO.*;
+import com.example.TheatronService.service.JwtService;
 import com.example.TheatronService.service.MediaService;
 import com.example.TheatronService.service.UserService;
 import com.example.TheatronService.service.VideoProcessingMQService;
@@ -19,7 +20,10 @@ public class MediaController {
 
     private final UserService userService;
 
-    public MediaController(MediaService mediaService, VideoProcessingMQService videoProcessingMQService, UserService userService) {
+
+    public MediaController(MediaService mediaService,
+                           VideoProcessingMQService videoProcessingMQService,
+                           UserService userService) {
         this.mediaService = mediaService;
         this.videoProcessingMQService = videoProcessingMQService;
         this.userService = userService;
@@ -80,6 +84,36 @@ public class MediaController {
             accessList = mediaService.removeUserFromMedia(username, mediaId, userToRemove);
         }
         return ShareMediaResponse.builder().updatedAccessList(accessList).build();
+    }
+
+    @PostMapping("/room/create")
+    public CreateMediaRoomResponse createMediaRoom(@RequestBody CreateMediaRoomRequest createMediaRoomRequest, HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        String mediaId = createMediaRoomRequest.getMediaId();
+        String roomName = createMediaRoomRequest.getRoomName();
+        String resp = mediaService.createNewRoom(username, mediaId, roomName);
+        return CreateMediaRoomResponse.builder().roomName(resp).build();
+    }
+
+    @PostMapping("/room/delete")
+    public DeleteMediaRoomResponse deleteMediaRoom(@RequestBody DeleteMediaRoomRequest deleteMediaRoomRequest, HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        String mediaId = deleteMediaRoomRequest.getMediaId();
+        String roomName = deleteMediaRoomRequest.getRoomName();
+        String resp = mediaService.deleteRoom(username, mediaId, roomName);
+        return DeleteMediaRoomResponse.builder().roomName(resp).build();
+    }
+
+    @PostMapping("/room/join")
+    public JoinRoomResponse joinRoom(@RequestBody JoinRoomRequest joinRoomRequest, HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        String mediaId = joinRoomRequest.getMediaId();
+        String roomName = joinRoomRequest.getRoomName();
+        String token = mediaService.checkIfRoomActive(username, mediaId, roomName);
+        if (token != null && !token.isEmpty()) {
+            return JoinRoomResponse.builder().roomAvailable(true).token(token).build();
+        }
+        return JoinRoomResponse.builder().roomAvailable(false).build();
     }
 
 }

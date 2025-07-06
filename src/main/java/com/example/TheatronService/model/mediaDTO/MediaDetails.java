@@ -17,5 +17,6 @@ public class MediaDetails {
     private String status;
     private String url;
     private String uploadedOn; // UTC timestamp
+    private String currentRoom;
     private List<String> externalUserAccessList;
 }
