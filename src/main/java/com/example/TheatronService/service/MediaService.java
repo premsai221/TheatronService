@@ -153,7 +153,7 @@ public class MediaService {
 
     public String deleteRoom(String username, String mediaId, String roomName) {
         TheatronMedia media = mediaRepo.getUserMedia(username, mediaId);
-        if (!media.getOwner().equals(username) || !media.getCurrentRoom().isEmpty() || !media.getCurrentRoom().equals(roomName)) {
+        if (!media.getOwner().equals(username) || media.getCurrentRoom().isEmpty() || !media.getCurrentRoom().equals(roomName)) {
             return null;
         }
         media.setCurrentRoom(null);
